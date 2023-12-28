@@ -1,3 +1,4 @@
+from time import sleep
 from django.http import StreamingHttpResponse
 from rest_framework import serializers, viewsets
 from django.contrib.auth.models import User
@@ -30,15 +31,18 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    DUP_QUERYSET = 30
+    DUP_QUERYSET = 100
 
     def _item_to_csv(self, item):
         return item.username + "," + item.email + "," + str(item.is_staff) + "\n"
 
     def stream_data(self, queryset):
+        yield "username,email,is_staff\n" # headers
+
         iterator = QuerysetIterator(queryset, self.DUP_QUERYSET)
         for items in iterator:
             for item in items:
+                sleep(0.03)
                 yield str(self._item_to_csv(item))
 
     @action(methods=["GET"], detail=False, url_path="streaming_view", url_name="streaming_view",)
@@ -47,4 +51,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
         response = StreamingHttpResponse(
             self.stream_data(queryset), content_type="text/csv")
+        response['Cache-Control'] = 'no-cache'
+        response['Content-Disposition'] = 'attachment; filename="users.csv"'
+        # response['Transfer-Encoding'] = 'chunked'
         return response

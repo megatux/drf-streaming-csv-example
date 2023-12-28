@@ -52,7 +52,8 @@ def test_user_list_streaming(django_user_model):
         users_data[1]['email'] + "," + str(user2.is_staff) + "\n"
     assert expected_content in streamed_content
 
-    assert streamed_content.count("\n") == 2*UserViewSet.DUP_QUERYSET
+    # Assert the CSV line count is ok (header line + records)
+    assert streamed_content.count("\n") == 1 + (2*UserViewSet.DUP_QUERYSET)
 
 
 def test_new_user(django_user_model):
